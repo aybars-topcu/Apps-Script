@@ -1,0 +1,40 @@
+//we set a trigger in the Apps Script to run this function as frequent as we want. 
+//Ideally you can run twice within trading hours. It makes the necessary changes on your options table in G_Sheets
+//Immediately after each evaluation you will get an alert email with info on current options status changes
+
+
+function alertColors() {
+  var ss = SpreadsheetApp.openById("Your_Google_Sheet_ID");
+  var sheet = ss.getSheetByName("Options");  //choose the page we're going to operate on
+  var lastRow = sheet.getRange(1,100).setFormula('=COUNTA(O:O)').getValue();   //get last row
+  var results = []; //create empty array as the foundation of our alert case list
+
+  //create a loop to check each option's current status (price vs. strike price)
+  for (var i=3;i<=lastRow;i++) {
+    var price = sheet.getRange(i,9).getValue(); //current price
+    var strike = sheet.getRange(i,10).getValue(); //strike price
+    var optionColor = sheet.getRange(i,11).getBackgroundColor();   //Put options are red & Call options are green - detect the kind of option
+    var priceColor = sheet.getRange(i,9).getFontColor();   //see if the strike is already hit or not. price color changes when strike is hit
+    
+    if(optionColor=='#d9ead3') {    //option cell is green it is a Call. Run all scenarios for Call status changes
+      if(price>=strike && priceColor=='#000000') {   //if price>strike => strike hit => Call to be exercised at expiration
+        sheet.getRange(i,9).setFontColor('#6aa84f');   //change text color => green
+        results.push('Call Status Change =>  ' + sheet.getRange(i,15).getValue()  + ' $' + sheet.getRange(i,10).getValue() +' => toGreen   // now@ $' + sheet.getRange(i,9).getValue());  //change in the option status => add to email alert list
+      } else if(price<strike && priceColor!='#000000') { //priceColor not black = previously hit strike - but now below strike
+            sheet.getRange(i,9).setFontColor('#000000');  //Call is back in free zone - text color back to black
+            results.push('Call Status Change =>  ' + sheet.getRange(i,15).getValue() + ' $' + sheet.getRange(i,10).getValue() + ' => toBlack   // now@ $' + sheet.getRange(i,9).getValue());  //change in the option status => add to email alert list
+      }
+    } else if(optionColor=='#f4cccc') {   //option cell is red - it is a Put. Run all scenarios for Put status changes
+          if(price<strike && priceColor=='#000000') {
+            sheet.getRange(i,9).setFontColor('#e06666');
+            results.push('Put Status Change =>  ' + sheet.getRange(i,15).getValue() + ' $' + sheet.getRange(i,10).getValue() + ' => toRed   // now@ $' + sheet.getRange(i,9).getValue());
+            } else if(price>strike && priceColor!='#000000') {
+                sheet.getRange(i,9).setFontColor('#000000');
+                results.push('Put Status Change =>  ' + sheet.getRange(i,15).getValue() + ' $' + sheet.getRange(i,10).getValue() + ' => toBlack   // now@ $' + sheet.getRange(i,9).getValue());
+            }
+          }
+    }
+  if (results.length>0) {
+    MailApp.sendEmail("yourEmail@domain.com"," Option Status Change", results.join("\n"));  //send alert email with the current option status changes
+  }        
+}
