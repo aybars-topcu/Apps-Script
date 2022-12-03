@@ -1,0 +1,59 @@
+// Turtle system had its glorious days way back in 70s-80s... I wanted to see its current performance
+// Created this tool with a little self touch on the original recipe and tried to automate the evaluation phase
+// with the help of Apps Script. It was a fun project.
+
+
+function Turtle_RSI {
+  var ss = SpreadsheetApp.openById("GoogleSheets_ID")
+  var results = [];
+  var sourceSh = ss.getSheetByName("report");  //source sheet which contains stocks and prices as time series on columns
+  var targetSh = ss.getSheetByName("rsi");   //our operational sheet
+  var srcLastRow = sourceSh.getLastRow();
+  var srcLastCol = sourceSh.getLastColumn();
+
+// we calculate RSI for all assets 
+
+for (var i=1;i<=srcLastCol;i++) {
+  var mySrc = sourceSh.getRange(srcLastRow-13,i,14);
+  targetSh.getRange("A2:H15").clearContent();
+  var myTarget = targetSh.getRange(2,1);
+  mySrc.copyTo(myTarget);
+
+  targetSh.getRange(3,2).setFormula("=A3-A2");
+  targetSh.getRange(3,3).setFormula("=IF(B3>0,B3,0)");
+  targetSh.getRange(3,4).setFormula("=IF(B3<0,-B3,0)");
+
+  targetSh.getRange(3,2).copyTo(targetSh.getRange(4,2,12));
+  targetSh.getRange(3,3).copyTo(targetSh.getRange(4,3,12));
+  targetSh.getRange(3,4).copyTo(targetSh.getRange(4,4,12));
+
+  targetSh.getRange(14,5).setFormula("=AVERAGE(C3:C14)");
+  targetSh.getRange(14,6).setFormula("=AVERAGE(D3:D14)");
+  targetSh.getRange(15,5).setFormula("=AVERAGE(C4:C15)")
+  targetSh.getRange(15,6).setFormula("=AVERAGE(D4:D15)");
+  targetSh.getRange(14,7).setFormula("=E14/F14");
+  targetSh.getRange(15,7).setFormula("=E15/F15");
+
+ // RSI formula
+  targetSh.getRange(14,8).setFormula("=IF(F14=0,100,100-(100/(1+G14)))");   
+  targetSh.getRange(14,8).copyTo(targetSh.getRange("H15"));   
+
+  var myRSI = targetSh.getRange("H15").getValue();  // our RSI
+  var lastP = targetSh.getRange("A15").getValue();   // current price
+  var preP = targetSh.getRange("A14").getValue();  // previous day's close price
+
+// if RSI is below 70 (asset is not overbought - to limit our risk) and we have a sudden 1,5% price spike then we see 
+// this as a turtle case and add to our alert list
+
+  if (myRSI<70 && lastP>preP*1.015) {
+    results.push("RSI/Turtle @ "+ sourceSh.getRange(1,i).getValue());
+  } 
+}
+
+// send alert email 
+
+ if (results.length>0) {
+   MailApp.sendEmail("emailAddress@domain.com", "RSI/Turtle Signal", results.join("\n"));
+
+ }   
+}
