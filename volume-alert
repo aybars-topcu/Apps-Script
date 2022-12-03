@@ -29,7 +29,7 @@ function Volume_Alert() {
 
   //if there is any case worth a look (results not empty)  then we send AlertMail 
   if(results.length>0) {   	  
-    MailApp.sendEmail("aybars.tview@gmail.com","Volume Alert: \n", results.join("\n"));
+    MailApp.sendEmail("emailAddress@domain.com", "Volume Alert: ", results.join("\n"));
 
   }
 } 
