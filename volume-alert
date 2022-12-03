@@ -1,0 +1,35 @@
+//code for Google Apps Script which evaluates our Sheets (which updates itself with current volumes of the stocks in our scope)
+//it forms a list of suspicious cases where volume triples relative to the previous day's trading volume, then eMails that list to us
+
+
+function Volume_Alert() {
+  var ss = SpreadsheetApp.openById("Google Sheets ID");
+  var sheet = ss.getSheetByName("SheetName");   //the page we operate on
+  
+  var sourceSheet = ss.getSheetByName("SourceSheetName");    //the page we draw the data from (that page uses googlefinance cells to update quotes)
+  var lastRow = sheet.getLastRow();
+  var lastColumn = sheet.getLastColumn();
+  var results = [];    //create empty result array for alert list
+
+  var valGFINvol = sourceSheet.getRange("3:3");  //get entire 3rd row which contains the last volume info
+  valGFINvol.copyTo(sheet.getRange(lastRow+1,1),{contentsOnly:true});  //we don't copy cell function. only contents
+
+
+// Start evaluation and finding alert conditions
+
+  for(var i=1;i<=lastColumn;i++) {
+    var preVol = sheet.getRange(lastRow,i).getValue();
+    var lastVol = sheet.getRange(lastRow+1,i).getValue();
+
+    if(lastVol>preVol*3) { 	//if last volume is more than triple the previous we find that suspicious and the case is worth a look
+      sheet.getRange(lastRow+1,i).setBackground("#95CA92");   // change cell color to attract attention while perusing our table
+      results.push(sheet.getRange(1,i).getValue())     //we add the case to our alert list 
+    }
+  }
+
+  //if there is any case worth a look (results not empty)  then we send AlertMail 
+  if(results.length>0) {   	  
+    MailApp.sendEmail("aybars.tview@gmail.com","Volume Alert: \n", results.join("\n"));
+
+  }
+} 
