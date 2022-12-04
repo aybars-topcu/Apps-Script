@@ -1,0 +1,45 @@
+function spike() {
+  var ss = SpreadsheetApp.openById("GoogleSheets_ID");
+  var sheet = ss.getSheetByName("gfin");
+  var valGFIN = sheet.getRange("2:2");
+  var pastePage = ss.getSheetByName("report"); 
+  var exlastRow = pastePage.getLastRow();
+  if (exlastRow>6) {
+    pastePage.deleteRow(2);
+  }
+  var lastRow = pastePage.getLastRow();
+  var target = pastePage.getRange(lastRow+1,1);
+  valGFIN.copyTo(target,{contentsOnly: true});
+  
+  var srcsheet = ss.getSheetByName("report");
+  var results = [];
+  var lastColumnSrc = srcsheet.getLastColumn();
+  
+  for (var i=3;i<=lastColumnSrc;i++) {
+    var val3 = srcsheet.getRange(7,i).getValue();
+    var val2 = srcsheet.getRange(6,i).getValue();
+    var val1 = srcsheet.getRange(5,i).getValue();
+    var val0 = srcsheet.getRange(4,i).getValue();
+    if(((val3/val0)>1.1 || val3/val1)>1.1 || (val3/val2)>1.1){
+      results.push("up => " + srcsheet.getRange(1,i).getValue());
+    } else if((val3/val0)<0.9 || (val3/val1)<0.9 || (val3/val2)<0.9) {
+      results.push("down => " + srcsheet.getRange(1,i).getValue());
+    }
+  }
+  var spy1 = srcsheet.getRange(7,2).getValue();
+  var spy2 = srcsheet.getRange(6,2).getValue();
+  var spy3 = srcsheet.getRange(5,2).getValue();
+  var spy4 = srcsheet.getRange(4,2).getValue();
+  if(spy1<spy2 && spy2<spy3 && spy3<spy4) {
+    results.push("SPY ALERT -oversold- ");
+  }
+  var vix1 = srcsheet.getRange(7,1).getValue();
+  var vix2 = srcsheet.getRange(6,1).getValue();
+  if(vix1>28 && vix1<vix2) {
+    results.push("VIX ALERT -peak- ");
+  }
+
+  if (results.length>0) {
+    MailApp.sendEmail("eMail_address@domain.com","VIX _ SPY _ Spike Report", results.join("\n")); 
+  }
+}
