@@ -24,7 +24,7 @@ function spike() {
   
   // create loop to evaluate all stocks and SPY and VIX one by one
   
-  for (var i=3;i<=lastColumnSrc;i++) {
+  for (var i=3;i<=lastColumnSrc;i++) {   //we start from column 3. the first two columns are SPY and VIX
     var val3 = srcsheet.getRange(7,i).getValue();
     var val2 = srcsheet.getRange(6,i).getValue();
     var val1 = srcsheet.getRange(5,i).getValue();
