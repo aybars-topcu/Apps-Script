@@ -1,28 +1,37 @@
+// we have 3 scenarios running here: 1) we check if SPY is consecutively down for 3 days or more (get ready to go long). 
+// 2) we look at VIX and if it is making a downturn (which means a relative relief for the markets) 
+// in the stress zone (high VIX = mayhem in the markets = get ready to jump in)
+// 3) check the last price actions of our predetermined stocks (of which we keep the last 7 days close prices)
+// and see if there is a spike or collapse.
+
 function spike() {
   var ss = SpreadsheetApp.openById("GoogleSheets_ID");
-  var sheet = ss.getSheetByName("gfin");
-  var valGFIN = sheet.getRange("2:2");
-  var pastePage = ss.getSheetByName("report"); 
+  var sheet = ss.getSheetByName("gfin");    //source page. 1st row: stock labels / 2nd row:current price/quote
+  var valGFIN = sheet.getRange("2:2");      //we get quotes
+  var pastePage = ss.getSheetByName("report"); //report page on which we evaluate & act
   var exlastRow = pastePage.getLastRow();
   if (exlastRow>6) {
-    pastePage.deleteRow(2);
+    pastePage.deleteRow(2); //we delete the oldest records at row 2 (record horizon=7 days) 
   }
   var lastRow = pastePage.getLastRow();
   var target = pastePage.getRange(lastRow+1,1);
-  valGFIN.copyTo(target,{contentsOnly: true});
+  valGFIN.copyTo(target,{contentsOnly: true});  //now we paste latest quotes to last row
   
   var srcsheet = ss.getSheetByName("report");
   var results = [];
   var lastColumnSrc = srcsheet.getLastColumn();
+  
+  
+  // create loop to evaluate all stocks and SPY and VIX one by one
   
   for (var i=3;i<=lastColumnSrc;i++) {
     var val3 = srcsheet.getRange(7,i).getValue();
     var val2 = srcsheet.getRange(6,i).getValue();
     var val1 = srcsheet.getRange(5,i).getValue();
     var val0 = srcsheet.getRange(4,i).getValue();
-    if(((val3/val0)>1.1 || val3/val1)>1.1 || (val3/val2)>1.1){
+    if(((val3/val0)>1.1 || val3/val1)>1.1 || (val3/val2)>1.1){  // red flag if there is a spike for more than %10
       results.push("up => " + srcsheet.getRange(1,i).getValue());
-    } else if((val3/val0)<0.9 || (val3/val1)<0.9 || (val3/val2)<0.9) {
+    } else if((val3/val0)<0.9 || (val3/val1)<0.9 || (val3/val2)<0.9) {  // red flag if there is a plunge for more than %10
       results.push("down => " + srcsheet.getRange(1,i).getValue());
     }
   }
@@ -30,14 +39,16 @@ function spike() {
   var spy2 = srcsheet.getRange(6,2).getValue();
   var spy3 = srcsheet.getRange(5,2).getValue();
   var spy4 = srcsheet.getRange(4,2).getValue();
-  if(spy1<spy2 && spy2<spy3 && spy3<spy4) {
+  if(spy1<spy2 && spy2<spy3 && spy3<spy4) {   // red flag if there is a collapse in SPY for 3 consecutive days (get ready to go long)
     results.push("SPY ALERT -oversold- ");
   }
   var vix1 = srcsheet.getRange(7,1).getValue();
   var vix2 = srcsheet.getRange(6,1).getValue();
-  if(vix1>28 && vix1<vix2) {
+  if(vix1>28 && vix1<vix2) {            // VIX is more than 28 (there is anxiety in the markets), but it turned down today (some positive reaction might be coming)
     results.push("VIX ALERT -peak- ");
   }
+
+// send alert eMail
 
   if (results.length>0) {
     MailApp.sendEmail("eMail_address@domain.com","VIX _ SPY _ Spike Report", results.join("\n")); 
