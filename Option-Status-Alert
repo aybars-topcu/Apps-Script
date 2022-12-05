@@ -34,7 +34,9 @@ function alertColors() {
             }
           }
     }
+  
+  //send alert email which contains current status changes in your options portfolio
   if (results.length>0) {
-    MailApp.sendEmail("yourEmail@domain.com"," Option Status Change", results.join("\n"));  //send alert email with the current option status changes
+    MailApp.sendEmail("yourEmail@domain.com"," Option Status Change", results.join("\n")); 
   }        
 }
